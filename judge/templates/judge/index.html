@@ -1,0 +1,98 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1b2029" media="(prefers-color-scheme: dark)">
+  <title>Laya Text Judge</title>
+  <link rel="stylesheet" href="{% static 'judge/app.css' %}">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <h1>Laya Text Judge</h1>
+        <span id="model-status" class="pill pill-muted">Checking model…</span>
+      </div>
+      <div class="top-live">
+        <span id="top-verdict" class="pill pill-muted" hidden></span>
+        <span id="live-state" class="muted small" aria-live="polite">Start typing to analyze</span>
+      </div>
+    </div>
+    <div id="busy" class="busy" aria-hidden="true"></div>
+  </header>
+
+  <main class="layout">
+    <form id="judge-form" class="panel input-panel">
+      {% csrf_token %}
+      <label class="field">
+        <span>Text</span>
+        <textarea id="body" rows="5" maxlength="20000" placeholder="Nhập nội dung cần đánh giá…" required></textarea>
+        <span id="char-count" class="muted small">0 characters</span>
+      </label>
+
+      <label class="field">
+        <span>Subject <em class="muted">(optional)</em></span>
+        <input id="subject" type="text" maxlength="300" placeholder="Tiêu đề…">
+      </label>
+
+      <div class="samples">
+        <span class="muted small">Samples:</span>
+        <button type="button" class="chip" data-sample="refund">Hoàn tiền</button>
+        <button type="button" class="chip" data-sample="outage">Sự cố</button>
+        <button type="button" class="chip" data-sample="thanks">Cảm ơn</button>
+        <button type="button" class="chip" data-sample="scam">Lừa đảo</button>
+        <button type="button" class="chip" data-sample="noaccent">Không dấu</button>
+      </div>
+
+      <label class="field">
+        <span>Checkpoint</span>
+        <select id="checkpoint">
+          <option value="multilingual" selected>Multilingual (best for Vietnamese)</option>
+          <option value="auto">Auto (Laya decides)</option>
+          <option value="english">English</option>
+        </select>
+      </label>
+
+      <label class="field">
+        <span>Review threshold: <strong id="threshold-value">{{ default_threshold }}</strong></span>
+        <input id="threshold" type="range" min="0.5" max="0.95" step="0.05" value="{{ default_threshold }}">
+        <span class="muted small">Answers below this confidence are sent to a human.</span>
+      </label>
+
+      <fieldset class="groups">
+        <legend>Question groups</legend>
+        {% for key, name, count in groups %}
+          <label class="toggle">
+            <input type="checkbox" name="groups" value="{{ key }}" checked>
+            <span>{{ name }} <em>{{ count }}</em></span>
+          </label>
+        {% endfor %}
+      </fieldset>
+
+      <div class="actions">
+        <label class="switch">
+          <input id="live" type="checkbox" checked>
+          <span>Live analysis</span>
+        </label>
+        <button id="submit" type="submit" class="primary">Analyze</button>
+      </div>
+      <p id="form-error" class="error" role="alert"></p>
+    </form>
+
+    <section id="results" class="results">
+      <div id="summary" class="summary"></div>
+      <div id="question-groups"></div>
+      <section class="panel request-info">
+        <h2 class="section-title">Request info</h2>
+        <div id="request-info" class="info-grid"></div>
+      </section>
+    </section>
+  </main>
+
+  {{ layout|json_script:"layout-data" }}
+
+  <script src="{% static 'judge/app.js' %}"></script>
+</body>
+</html>

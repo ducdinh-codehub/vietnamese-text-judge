@@ -1,0 +1,162 @@
+{
+  "groups": {
+    "content": "Content & intent",
+    "tone": "Tone & emotion",
+    "risk": "Risk & safety",
+    "quality": "Quality",
+    "action": "Action"
+  },
+  "questions": {
+    "intent": {
+      "group": "content",
+      "label": "Intent",
+      "type": "choice",
+      "instructions": "What is the main intent of the author?",
+      "criteria": {
+        "question": "asks for information",
+        "complaint": "complains about a problem or bad experience",
+        "request": "asks for something to be done",
+        "feedback": "gives an opinion, praise or suggestion",
+        "other": "anything else"
+      }
+    },
+    "topic": {
+      "group": "content",
+      "label": "Topic",
+      "type": "choice",
+      "instructions": "What is the text mainly about?",
+      "criteria": {
+        "billing": "invoices, payments, refunds, prices",
+        "technical": "bugs, errors, outages, performance",
+        "account": "login, users, permissions, account changes",
+        "product": "features, plans, how the product works",
+        "other": "anything else"
+      }
+    },
+    "has_question": {
+      "group": "content",
+      "label": "Contains a question",
+      "type": "noul",
+      "instructions": "Does the text ask a question?"
+    },
+    "wants_refund": {
+      "group": "content",
+      "label": "Asks for refund / compensation",
+      "type": "noul",
+      "instructions": "Does the author ask for money back or compensation?"
+    },
+    "sentiment": {
+      "group": "tone",
+      "label": "Sentiment",
+      "type": "choice",
+      "instructions": "What is the overall sentiment of the text?",
+      "criteria": {
+        "positive": "happy, satisfied, thankful",
+        "neutral": "factual, no clear feeling",
+        "negative": "unhappy, dissatisfied, critical"
+      }
+    },
+    "emotion": {
+      "group": "tone",
+      "label": "Emotion",
+      "type": "choice",
+      "instructions": "Which emotion does the author mainly express?",
+      "criteria": {
+        "happy": "joy, gratitude, satisfaction",
+        "angry": "anger, frustration, irritation",
+        "sad": "disappointment, sadness",
+        "worried": "worry, anxiety, fear",
+        "neutral": "no clear emotion"
+      }
+    },
+    "politeness": {
+      "group": "tone",
+      "label": "Politeness",
+      "type": "score",
+      "instructions": "How polite is the text?",
+      "criteria": ["rude", "neutral", "polite"]
+    },
+    "sarcasm": {
+      "group": "tone",
+      "label": "Sarcasm",
+      "type": "noul",
+      "instructions": "Is the author being sarcastic or ironic?"
+    },
+    "toxic": {
+      "group": "risk",
+      "label": "Toxic / insulting",
+      "type": "noul",
+      "instructions": "Does the text contain insults, hate or abusive language?"
+    },
+    "threat": {
+      "group": "risk",
+      "label": "Threat / violence",
+      "type": "noul",
+      "instructions": "Does the text threaten violence or harm to someone?"
+    },
+    "spam": {
+      "group": "risk",
+      "label": "Spam / advertising",
+      "type": "noul",
+      "instructions": "Is the text spam or unsolicited advertising?"
+    },
+    "scam": {
+      "group": "risk",
+      "label": "Scam / phishing",
+      "type": "noul",
+      "instructions": "Does the text try to trick the reader into giving money, passwords or personal data?"
+    },
+    "personal_info": {
+      "group": "risk",
+      "label": "Contains personal info",
+      "type": "noul",
+      "instructions": "Does the text contain personal data such as a phone number, ID number, email or home address?"
+    },
+    "clarity": {
+      "group": "quality",
+      "label": "Clarity",
+      "type": "score",
+      "instructions": "How clear and easy to understand is the text?",
+      "criteria": ["unclear", "somewhat clear", "clear"]
+    },
+    "detail": {
+      "group": "quality",
+      "label": "Detail level",
+      "type": "score",
+      "instructions": "How much specific detail does the text give?",
+      "criteria": ["vague", "some detail", "specific"]
+    },
+    "formality": {
+      "group": "quality",
+      "label": "Formality",
+      "type": "score",
+      "instructions": "How formal is the writing style?",
+      "criteria": ["casual", "neutral", "formal"]
+    },
+    "urgency": {
+      "group": "action",
+      "label": "Urgency",
+      "type": "score",
+      "instructions": "How urgent is the request?",
+      "criteria": ["low", "medium", "high"]
+    },
+    "needs_reply": {
+      "group": "action",
+      "label": "Needs a reply",
+      "type": "noul",
+      "instructions": "Does the author expect a reply?"
+    },
+    "needs_human": {
+      "group": "action",
+      "label": "Should go to a human",
+      "type": "noul",
+      "instructions": "Should a human staff member handle this personally?"
+    },
+    "churn": {
+      "group": "action",
+      "label": "Churn risk",
+      "type": "noul",
+      "instructions": "Does the customer intend to cancel or switch to another provider?"
+    }
+  }
+}
