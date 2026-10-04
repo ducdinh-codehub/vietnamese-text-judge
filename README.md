@@ -8,6 +8,7 @@
 [![Django](https://img.shields.io/badge/django-5-092E20?logo=django&logoColor=white)](https://www.djangoproject.com/)
 [![Model](https://img.shields.io/badge/model-Laya-FFD21E?logo=huggingface&logoColor=black)](https://huggingface.co/convaiinnovations/laya)
 [![Tiếng Việt](https://img.shields.io/badge/ti%E1%BA%BFng%20vi%E1%BB%87t-supported-DA251D)](#)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 <img src="docs/images/text-judge.png" alt="Text Judge page scoring a Vietnamese billing complaint on 20 questions" width="900">
 
@@ -23,8 +24,8 @@
 ## 🚀 Quick start
 
 ```bash
-git clone https://github.com/ducdinh-codehub/laya-demo.git
-cd laya-demo
+git clone https://github.com/ducdinh-codehub/vietnamese-text-judge.git
+cd vietnamese-text-judge
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 .venv/bin/python manage.py runserver
@@ -47,3 +48,7 @@ Open http://127.0.0.1:8000. The first run downloads the model (~2.8 GB).
 ## 🙏 Credits
 
 Built on [Laya](https://huggingface.co/convaiinnovations/laya) by Convai Innovations (Apache 2.0).
+
+## 📄 License
+
+[MIT](LICENSE). The Laya model has its own Apache 2.0 license.
