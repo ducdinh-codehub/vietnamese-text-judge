@@ -1,0 +1,84 @@
+{% load static %}<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1b2029" media="(prefers-color-scheme: dark)">
+  <title>Kiểm tra lừa đảo</title>
+  <link rel="stylesheet" href="{% static 'judge/app.css' %}">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <h1>Kiểm tra lừa đảo</h1>
+        <span id="model-status" class="pill pill-muted">Checking model…</span>
+      </div>
+      <nav class="nav">
+        <a href="{% url 'index' %}">Text Judge</a>
+        <a href="{% url 'scam' %}" aria-current="page">Kiểm tra lừa đảo</a>
+        <a href="{% url 'emotion' %}">Cảm xúc</a>
+      </nav>
+    </div>
+    <div id="busy" class="busy" aria-hidden="true"></div>
+  </header>
+
+  <main class="layout">
+    <form id="scam-form" class="panel input-panel is-loading" aria-busy="true">
+      {% csrf_token %}
+      <label class="field">
+        <span>Tin nhắn cần kiểm tra</span>
+        <textarea id="body" rows="7" maxlength="3000" required
+          placeholder="Dán tin nhắn SMS, Zalo, Messenger hoặc email vào đây…"></textarea>
+        <span id="live-state" class="muted small" aria-live="polite">Kết quả sẽ hiện khi bạn nhập</span>
+      </label>
+      <p class="muted small">
+        Tin nhắn chỉ được xử lý trên máy chủ này, không gửi đi nơi khác.
+        Kết quả do máy đánh giá và có thể sai, hãy luôn tự kiểm tra lại.
+      </p>
+      <p id="form-error" class="error" role="alert"></p>
+    </form>
+
+    <section class="results">
+      <div id="scam-verdict" class="panel scam-verdict pending">
+        <div class="scam-level" id="scam-level">Chưa kiểm tra</div>
+        <div class="scam-risk">
+          <span>Mức độ rủi ro</span>
+          <strong id="scam-risk">—</strong>
+        </div>
+        <div class="bar muted"><span id="scam-risk-bar" style="width: 0%"></span></div>
+      </div>
+
+      <section class="panel scam-section">
+        <h2 class="scam-title">Dấu hiệu phát hiện</h2>
+        <ul id="scam-signals" class="scam-list">
+          <li class="muted">Chưa có.</li>
+        </ul>
+      </section>
+
+      <section class="panel scam-section">
+        <h2 class="scam-title">Nên làm gì</h2>
+        <ul id="scam-advice" class="scam-list">
+          <li class="muted">Dán tin nhắn để xem gợi ý.</li>
+        </ul>
+      </section>
+
+      <section class="panel scam-section">
+        <h2 class="scam-title">Đánh giá của AI (Laya)</h2>
+        <div class="meters">
+          <div class="m">
+            <div class="m-top"><span class="k">Khả năng lừa đảo</span><span class="v" id="laya-score">—</span></div>
+            <div class="bar muted"><span id="laya-bar" style="width: 0%"></span></div>
+          </div>
+        </div>
+        <p class="muted small">
+          Mô hình AI chỉ là một phần của kết quả. Mức độ rủi ro kết hợp đánh giá này với các dấu hiệu ở trên.
+        </p>
+      </section>
+    </section>
+  </main>
+
+  <script src="{% static 'judge/scam.js' %}"></script>
+</body>
+</html>

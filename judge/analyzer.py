@@ -95,9 +95,21 @@ def _language(state, text):
     }
 
 
-def analyze(subject, body, checkpoint="multilingual", threshold=DEFAULT_THRESHOLD, groups=None):
+def predict(state, laya_questions, checkpoint="multilingual"):
+    """Ask Laya a set of questions, loading the checkpoint first if needed."""
     if checkpoint not in CHECKPOINTS:
         raise ValueError(f"checkpoint must be one of {CHECKPOINTS}")
+    decision = _router.route(state, laya_questions, model=None if checkpoint == "auto" else checkpoint)
+    routed = decision.model
+    load_ms = _ensure_loaded(routed)
+
+    start = time.perf_counter()
+    result = _router.predict(state, laya_questions, model=routed)
+    predict_ms = (time.perf_counter() - start) * 1000
+    return {"result": result, "decision": decision, "model": routed, "load_ms": load_ms, "predict_ms": predict_ms}
+
+
+def analyze(subject, body, checkpoint="multilingual", threshold=DEFAULT_THRESHOLD, groups=None):
     groups = set(groups or GROUPS)
     selected = {qid: spec for qid, spec in QUESTIONS.items() if spec["group"] in groups}
     if not selected:
@@ -109,13 +121,9 @@ def analyze(subject, body, checkpoint="multilingual", threshold=DEFAULT_THRESHOL
         for qid, spec in selected.items()
     }
 
-    decision = _router.route(state, laya_questions, model=None if checkpoint == "auto" else checkpoint)
-    routed = decision.model
-    load_ms = _ensure_loaded(routed)
-
-    start = time.perf_counter()
-    result = _router.predict(state, laya_questions, model=routed)
-    predict_ms = (time.perf_counter() - start) * 1000
+    run = predict(state, laya_questions, checkpoint)
+    result, decision, routed = run["result"], run["decision"], run["model"]
+    load_ms, predict_ms = run["load_ms"], run["predict_ms"]
 
     per_question = {
         qid: metrics.question_metrics(result["answers"][qid], spec, threshold)

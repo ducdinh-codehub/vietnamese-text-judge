@@ -80,6 +80,14 @@ h1 { font-size: 17px; margin: 0; white-space: nowrap; }
 .top-live { display: flex; align-items: center; gap: 8px; min-width: 0; }
 #live-state { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
+.nav { display: flex; gap: 4px; }
+.nav a {
+  font-size: 14px; font-weight: 600; color: var(--muted); text-decoration: none;
+  padding: 6px 12px; border-radius: 999px; min-height: 36px; display: inline-flex; align-items: center;
+}
+.nav a:hover { color: var(--text); }
+.nav a[aria-current="page"] { background: var(--accent-soft); color: var(--accent); }
+
 /* Thin animated line under the top bar while a request runs. */
 .busy { height: 3px; overflow: hidden; position: relative; }
 .busy.on::before {
@@ -148,36 +156,23 @@ input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-
 }
 input[type="range"] { width: 100%; height: 32px; accent-color: var(--accent); }
 
-.samples { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: -4px 0 16px; }
-.chip {
-  font: inherit; font-size: 14px;
-  background: var(--bg); color: var(--text);
-  border: 1px solid var(--border); border-radius: 999px;
-  padding: 7px 14px; min-height: 36px; cursor: pointer;
+/* Skeleton fields while the model loads. The form starts with .is-loading so it shows on first
+   paint; the page script removes it once /api/status reports a loaded model. */
+.is-loading :is(input[type="text"], textarea, select) {
+  color: transparent;
+  border-color: transparent;
+  pointer-events: none;
+  background: linear-gradient(90deg, var(--track) 25%, var(--bg) 50%, var(--track) 75%) 0 0 / 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
 }
-.chip:hover { border-color: var(--accent); }
-
-.groups { border: 0; padding: 0; margin: 0 0 16px; display: flex; flex-wrap: wrap; gap: 8px; }
-.groups legend { font-weight: 600; font-size: 14px; margin-bottom: 8px; padding: 0; }
-.toggle { position: relative; cursor: pointer; }
-.toggle input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
-.toggle span {
-  display: inline-flex; align-items: center; gap: 6px;
-  min-height: 38px; padding: 7px 14px;
-  border: 1px solid var(--border); border-radius: 999px;
-  font-size: 14px; background: var(--bg); color: var(--muted);
+.is-loading :is(input[type="text"], textarea)::placeholder { color: transparent; }
+.is-loading input[type="range"] { opacity: .4; pointer-events: none; }
+@keyframes shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
 }
-.toggle span em { font-style: normal; font-size: 12px; opacity: .8; }
-.toggle input:checked + span { background: var(--accent-soft); border-color: var(--accent); color: var(--text); }
-.toggle input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 1px; }
-
-.actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-.switch { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; cursor: pointer; min-height: 44px; }
-.switch input { width: 20px; height: 20px; accent-color: var(--accent); }
-.primary {
-  font: inherit; font-weight: 600;
-  background: var(--accent); color: var(--accent-text);
-  border: 0; border-radius: 10px; padding: 11px 24px; min-height: 44px; cursor: pointer;
+@media (prefers-reduced-motion: reduce) {
+  .is-loading :is(input[type="text"], textarea, select) { animation: none; background: var(--track); }
 }
 
 .pill { display: inline-block; font-size: 12.5px; font-weight: 600; padding: 3px 10px; border-radius: 999px; white-space: nowrap; }
@@ -190,7 +185,7 @@ input[type="range"] { width: 100%; height: 32px; accent-color: var(--accent); }
 
 .results { min-width: 0; }
 
-.summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 8px; }
+.summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 8px; }
 .stat { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; min-width: 0; }
 .stat .label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
 .stat .value { font-size: 22px; font-weight: 700; margin: 2px 0 8px; font-variant-numeric: tabular-nums; }
@@ -203,7 +198,6 @@ input[type="range"] { width: 100%; height: 32px; accent-color: var(--accent); }
 .verdict-review { border-color: var(--warn); }
 .verdict-review .value { color: var(--warn); }
 
-.section-title { font-size: 15px; margin: 0 0 12px; }
 .group-title { font-size: 15px; margin: 22px 0 10px; display: flex; align-items: center; gap: 8px; }
 .group-title .pill { font-weight: 600; }
 
@@ -211,21 +205,15 @@ input[type="range"] { width: 100%; height: 32px; accent-color: var(--accent); }
 .card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; min-width: 0; }
 .card.review { border-left: 4px solid var(--warn); }
 .card.auto { border-left: 4px solid var(--good); }
-/* Before the first result, and for question groups switched off: same layout, dimmed. */
-.card.pending, .card.inactive { border-left: 4px solid var(--border); }
-.card.inactive { opacity: .55; }
+/* Before the first result: same layout, neutral edge. */
+.card.pending { border-left: 4px solid var(--border); }
 .card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
 .card-title { font-weight: 600; font-size: 15px; }
 .card-type { font-size: 12px; color: var(--muted); }
-.answer { font-size: 21px; font-weight: 700; margin: 4px 0 10px; overflow-wrap: anywhere; }
+.answer { font-size: 21px; font-weight: 700; margin: 4px 0 12px; overflow-wrap: anywhere; }
 .answer.band-yes { color: var(--bad); }
 .answer.band-no { color: var(--good); }
 .answer.band-unsure { color: var(--warn); }
-
-.card h4 {
-  font-size: 11.5px; text-transform: uppercase; letter-spacing: .05em;
-  color: var(--muted); margin: 12px 0 6px; font-weight: 600;
-}
 
 /* A meter: label and value on one line, bar underneath. Readable on narrow screens. */
 .meters { display: flex; flex-direction: column; gap: 8px; }
@@ -245,15 +233,37 @@ input[type="range"] { width: 100%; height: 32px; accent-color: var(--accent); }
 
 .experimental { color: var(--warn); }
 
-/* Request info */
-.request-info { margin-top: 22px; }
-.info-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 18px; }
-.info-block h3 { font-size: 12px; margin: 0 0 8px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
-.kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 13px; margin: 8px 0 0; }
-.kv dt { color: var(--muted); }
-.kv dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
-.notice { padding: 10px 12px; border-radius: 8px; font-size: 13.5px; margin-top: 10px; }
+.notice { padding: 10px 12px; border-radius: 8px; font-size: 13.5px; margin-top: 8px; }
 .notice.warn { background: var(--warn-bg); color: var(--warn); }
+
+/* ---------- scam checker ---------- */
+
+.scam-verdict { border-left: 6px solid var(--border); margin-bottom: 12px; }
+.scam-verdict.danger { border-left-color: var(--bad); background: var(--bad-bg); }
+.scam-verdict.suspicious { border-left-color: var(--warn); background: var(--warn-bg); }
+.scam-verdict.low { border-left-color: var(--good); }
+.scam-level { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+.scam-verdict.danger .scam-level { color: var(--bad); }
+.scam-verdict.suspicious .scam-level { color: var(--warn); }
+.scam-verdict.low .scam-level { color: var(--good); }
+.scam-risk { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 4px; }
+.scam-risk strong { font-variant-numeric: tabular-nums; }
+.scam-section { margin-bottom: 12px; }
+.scam-title { font-size: 15px; margin: 0 0 10px; }
+.scam-list { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
+.signal-match { display: block; font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+.signal.protective { color: var(--good); }
+
+/* ---------- emotion checker ---------- */
+
+.emotion-main { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 12px; border-left: 6px solid var(--border); }
+.emotion-emoji { font-size: 44px; line-height: 1; }
+.emotion-label { font-size: 24px; font-weight: 700; }
+.emotion-main > div:nth-child(2) { flex: 1; min-width: 0; }
+.emotion-happy, .emotion-grateful, .emotion-love { border-left-color: var(--good); }
+.emotion-angry { border-left-color: var(--bad); }
+.emotion-sad, .emotion-worried { border-left-color: var(--warn); }
+.emotion-surprised { border-left-color: var(--accent); }
 
 /* ---------- small screens ---------- */
 
@@ -263,11 +273,10 @@ input[type="range"] { width: 100%; height: 32px; accent-color: var(--accent); }
   .stat { padding: 12px; }
   .stat .value { font-size: 19px; }
   .cards { grid-template-columns: minmax(0, 1fr); }
-  .actions .primary { flex: 1; }
 }
 
 @media (max-width: 420px) {
   h1 { font-size: 15.5px; }
   #model-status { display: none; }
-  .topbar-inner { flex-wrap: nowrap; }
+  .topbar-inner { flex-wrap: wrap; }
 }
