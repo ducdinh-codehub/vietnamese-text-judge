@@ -1,0 +1,33 @@
+{% load static %}<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Đăng nhập quản lý</title>
+  <link rel="stylesheet" href="{% static 'judge/app.css' %}">
+  <link rel="stylesheet" href="{% static 'judge/live.css' %}">
+</head>
+<body>
+  <main class="auth-layout">
+    <form class="panel auth-card" method="post">
+      {% csrf_token %}
+      <h1>Đăng nhập quản lý</h1>
+      <p class="muted small">Dành cho chủ shop và người được cấp quyền xử lý hàng chờ.</p>
+      {% if form.errors %}
+        <p class="error">Sai tên đăng nhập hoặc mật khẩu.</p>
+      {% endif %}
+      <label class="field">
+        <span>Tên đăng nhập</span>
+        <input type="text" name="username" autocomplete="username" required autofocus>
+      </label>
+      <label class="field">
+        <span>Mật khẩu</span>
+        <input type="password" name="password" autocomplete="current-password" required>
+      </label>
+      <input type="hidden" name="next" value="{{ next }}">
+      <button type="submit" class="btn btn-primary btn-block">Đăng nhập</button>
+      <a class="muted small" href="{% url 'live' %}">← Về phiên live</a>
+    </form>
+  </main>
+</body>
+</html>

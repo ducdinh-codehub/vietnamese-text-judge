@@ -52,6 +52,21 @@ def warm_up():
     _ensure_loaded("multilingual")
 
 
+_warm_up_started = threading.Event()
+_warm_up_lock = threading.Lock()
+
+
+def start_warm_up():
+    """Load the default checkpoint in a background thread, once per process."""
+    if _warm_up_started.is_set():
+        return
+    with _warm_up_lock:
+        if _warm_up_started.is_set():
+            return
+        _warm_up_started.set()
+    threading.Thread(target=warm_up, daemon=True).start()
+
+
 def loaded_checkpoints():
     return {name: dict(info) for name, info in _loaded.items()}
 

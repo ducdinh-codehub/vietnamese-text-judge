@@ -80,10 +80,11 @@ h1 { font-size: 17px; margin: 0; white-space: nowrap; }
 .top-live { display: flex; align-items: center; gap: 8px; min-width: 0; }
 #live-state { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-.nav { display: flex; gap: 4px; }
+.nav { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; max-width: 100%; }
 .nav a {
   font-size: 14px; font-weight: 600; color: var(--muted); text-decoration: none;
   padding: 6px 12px; border-radius: 999px; min-height: 36px; display: inline-flex; align-items: center;
+  white-space: nowrap;
 }
 .nav a:hover { color: var(--text); }
 .nav a[aria-current="page"] { background: var(--accent-soft); color: var(--accent); }

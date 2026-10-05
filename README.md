@@ -2,7 +2,7 @@
 
 # ⚖️ Laya Text Judge
 
-**Paste a message. Get instant judgements, scam warnings and emotions. Runs on your laptop, no API key.**
+**Paste a message. Get instant judgements, scam warnings and emotions, or moderate a live-selling chat. Runs on your laptop, no API key.**
 
 [![Python](https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![Django](https://img.shields.io/badge/django-5-092E20?logo=django&logoColor=white)](https://www.djangoproject.com/)
@@ -19,6 +19,7 @@
 - 🧠 **Text Judge**: 20 questions (intent, sentiment, toxicity, spam, urgency…) answered live as you type
 - 🛡️ **Scam checker**: spots Vietnamese SMS, Zalo and email scams and explains why
 - 💬 **Emotion checker**: 8 emotions, plus the words that show them
+- 📺 **Livestream chat**: hides spam and insults, and sends orders and price questions to a queue your helpers can work through
 - 🔒 **100% local**: nothing you paste leaves your machine
 
 ## 🚀 Quick start
@@ -28,16 +29,28 @@ git clone https://github.com/ducdinh-codehub/vietnamese-text-judge.git
 cd vietnamese-text-judge
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
+.venv/bin/python manage.py migrate
+.venv/bin/python manage.py createsuperuser   # your shop-owner login
 .venv/bin/python manage.py runserver
 ```
 
 Open http://127.0.0.1:8000. The first run downloads the model (~2.8 GB).
 
+## 📺 Livestream chat
+
+Open http://127.0.0.1:8000/live. Switch between your webcam and a video, and turn on the simulated audience to see the moderator at work.
+
+<img src="docs/images/livestream.png" alt="Livestream page: video stage on the left, chat on the right with orders tagged and spam and insults hidden" width="900">
+
+Orders, price and product questions and complaints go to the queue at `/live/queue`. To let a helper work it, create their account in `/admin` and give them the permission *Can work through the livestream queue*. Measure the filter with `.venv/bin/python live_eval.py`.
+
+**↺ Làm lại từ đầu** clears the chat and queue so you can demo again. In demo mode anyone can press it; start with `LAYA_LIVE_DEMO=0` before putting the site online so only the owner can.
+
 ## 📸 Screenshots
 
-| Scam checker | Emotion checker |
-|---|---|
-| <img src="docs/images/scam-checker.png" alt="Scam checker flagging a fake bank SMS as dangerous"> | <img src="docs/images/emotion-checker.png" alt="Emotion checker reading a thank-you message as happy"> |
+| Scam checker | Emotion checker | Live order queue |
+|---|---|---|
+| <img src="docs/images/scam-checker.png" alt="Scam checker flagging a fake bank SMS as dangerous"> | <img src="docs/images/emotion-checker.png" alt="Emotion checker reading a thank-you message as happy"> | <img src="docs/images/live-queue.png" alt="Order queue with claim and done buttons"> |
 
 ## ⚠️ Good to know
 

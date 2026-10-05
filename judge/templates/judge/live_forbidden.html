@@ -1,0 +1,27 @@
+{% load static %}<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Chưa có quyền</title>
+  <link rel="stylesheet" href="{% static 'judge/app.css' %}">
+  <link rel="stylesheet" href="{% static 'judge/live.css' %}">
+</head>
+<body>
+  <main class="auth-layout">
+    <div class="panel auth-card">
+      <h1>Chưa có quyền quản lý</h1>
+      <p>Tài khoản <strong>{{ user.get_username }}</strong> chưa được cấp quyền xử lý hàng chờ.</p>
+      <p class="muted small">
+        Chủ shop vào <a href="{% url 'admin:index' %}">trang quản trị</a> → Users → chọn tài khoản này →
+        thêm quyền <em>“Can work through the livestream queue and see hidden comments”</em>.
+      </p>
+      <form method="post" action="{% url 'logout' %}">
+        {% csrf_token %}
+        <a class="btn" href="{% url 'live' %}">← Về phiên live</a>
+        <button type="submit" class="btn">Đăng nhập tài khoản khác</button>
+      </form>
+    </div>
+  </main>
+</body>
+</html>

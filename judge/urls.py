@@ -10,4 +10,11 @@ urlpatterns = [
     path("emotion", views.emotion_page, name="emotion"),
     path("api/emotion", views.emotion_check, name="emotion_check"),
     path("api/status", views.status, name="status"),
+    path("live", views.live_page, name="live"),
+    path("live/queue", views.live_queue_page, name="live_queue"),
+    path("api/live/comments", views.live_feed, name="live_feed"),
+    path("api/live/post", views.live_post, name="live_post"),
+    path("api/live/queue", views.live_queue, name="live_queue_api"),
+    path("api/live/queue/<int:comment_id>", views.live_queue_action, name="live_queue_action"),
+    path("api/live/reset", views.live_reset, name="live_reset"),
 ]

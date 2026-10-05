@@ -1,0 +1,121 @@
+{% load static %}<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1b2029" media="(prefers-color-scheme: dark)">
+  <title>Phiên chợ Live</title>
+  <link rel="stylesheet" href="{% static 'judge/app.css' %}">
+  <link rel="stylesheet" href="{% static 'judge/live.css' %}">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <h1>Phiên chợ Live</h1>
+        <span id="model-status" class="pill pill-muted">Checking model…</span>
+      </div>
+      <nav class="nav">
+        <a href="{% url 'index' %}">Text Judge</a>
+        <a href="{% url 'scam' %}">Kiểm tra lừa đảo</a>
+        <a href="{% url 'emotion' %}">Cảm xúc</a>
+        <a href="{% url 'live' %}" aria-current="page">Livestream</a>
+      </nav>
+      <div class="top-live">
+        {% if can_moderate %}
+          <a class="btn btn-primary" href="{% url 'live_queue' %}">Hàng chờ <span id="queue-count" class="count">0</span></a>
+        {% else %}
+          <a class="btn" href="{% url 'login' %}?next={% url 'live_queue' %}">Đăng nhập quản lý</a>
+        {% endif %}
+      </div>
+    </div>
+  </header>
+
+  <main class="live-layout">
+    <section class="stage-col">
+      <div class="stage" id="stage">
+        <video id="stage-video" playsinline autoplay muted loop></video>
+        <div class="stage-empty" id="stage-empty">
+          <div class="stage-empty-icon" aria-hidden="true">📺</div>
+          <p>Chưa có hình. Bật webcam hoặc chọn một video.</p>
+          <label class="btn btn-on-dark" for="video-file">🎬 Chọn video</label>
+        </div>
+        <div class="stage-top">
+          <span class="live-badge">LIVE</span>
+          <span class="viewers" title="Người đang xem">👁 <span id="viewer-count">1.284</span></span>
+        </div>
+      </div>
+
+      <div class="panel stage-bar">
+        <div class="stream-title">
+          <strong>Phiên chợ tối nay: áo, váy, túi xách</strong>
+          <span class="muted small">Laya tự lọc spam, lời lẽ tiêu cực và gom đơn vào hàng chờ</span>
+        </div>
+        <div class="controls">
+          <label class="switch">
+            <input type="checkbox" id="webcam-toggle" role="switch">
+            <span class="switch-track" aria-hidden="true"></span>
+            <span>Webcam</span>
+          </label>
+          <label class="btn" for="video-file">🎬 Chọn video</label>
+          <input type="file" id="video-file" accept="video/*" hidden>
+          <button type="button" class="btn" id="sound-toggle" hidden>🔇 Bật tiếng</button>
+        </div>
+        <p id="stage-error" class="error" role="alert"></p>
+
+        <div class="sim-row" role="group" aria-label="Khán giả mô phỏng">
+          <strong class="sim-title">🧪 Khán giả mô phỏng</strong>
+          <label class="sim-field">
+            <span>Số tin nhắn</span>
+            <input type="number" id="sim-count" min="1" max="500" step="1" value="30" inputmode="numeric">
+          </label>
+          <label class="sim-field">
+            <span>Tốc độ</span>
+            <select id="sim-speed">
+              <option value="3000">Chậm · 1 tin / 3 giây</option>
+              <option value="1500" selected>Vừa · 1 tin / 1,5 giây</option>
+              <option value="1100">Nhanh · gần 1 tin / giây</option>
+            </select>
+          </label>
+          <button type="button" class="btn btn-primary" id="sim-start">▶ Bắt đầu</button>
+          <span id="sim-progress" class="muted small" aria-live="polite"></span>
+          {% if can_reset %}
+            <button type="button" class="btn btn-danger" id="live-reset">↺ Làm lại từ đầu</button>
+          {% endif %}
+        </div>
+      </div>
+    </section>
+
+    <aside class="panel chat" aria-label="Trò chuyện trực tiếp">
+      <div class="chat-head">
+        <strong>Trò chuyện trực tiếp</strong>
+        <label class="switch switch-sm">
+          <input type="checkbox" id="show-hidden" role="switch">
+          <span class="switch-track" aria-hidden="true"></span>
+          <span>Hiện tin đã ẩn</span>
+        </label>
+      </div>
+      <div class="chat-stats muted small">
+        <span>🛒 Hàng chờ <strong id="stat-queued">0</strong></span>
+        <span>🚫 Đã ẩn <strong id="stat-hidden">0</strong></span>
+      </div>
+      <ol id="chat-list" class="chat-list"></ol>
+      <button type="button" id="chat-resume" class="btn btn-primary chat-resume" hidden>Tin nhắn mới ↓</button>
+
+      <form id="chat-form" class="chat-form is-loading" aria-busy="true">
+        {% csrf_token %}
+        <input id="chat-author" type="text" maxlength="40" placeholder="Tên của bạn" autocomplete="nickname" aria-label="Tên của bạn">
+        <div class="chat-send">
+          <input id="chat-text" type="text" maxlength="200" placeholder="Gửi tin nhắn…" autocomplete="off" aria-label="Tin nhắn">
+          <button type="submit" class="btn btn-primary">Gửi</button>
+        </div>
+        <p id="chat-error" class="error" role="alert"></p>
+      </form>
+    </aside>
+  </main>
+
+  <script>window.LIVE = { canModerate: {{ can_moderate|yesno:"true,false" }} };</script>
+  <script src="{% static 'judge/live.js' %}"></script>
+</body>
+</html>
