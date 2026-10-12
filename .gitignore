@@ -13,3 +13,12 @@ staticfiles/
 # Local settings and OS files
 .env
 .DS_Store
+
+# Exported ONNX models (export_onnx.py)
+onnx/
+
+# Training data (finetune/build_dataset.py): licenses forbid redistributing it, see finetune/README.md
+finetune/data/
+
+# Fine-tuned checkpoints (finetune/train.py): trained on non-commercial data
+checkpoints/

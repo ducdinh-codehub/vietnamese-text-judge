@@ -1,14 +1,17 @@
+import hashlib
 import json
 import math
+import time
 
 from django.conf import settings
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth import get_user_model
+from django.contrib.auth.views import redirect_to_login
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
-from . import analyzer, emotion, limits, live, scam
+from . import analyzer, emotion, limits, live, scam, worksheet
 from .models import LiveComment
 
 # The model reads about 2,500 Vietnamese characters; longer text only costs time. Keep in sync with
@@ -165,6 +168,61 @@ def emotion_check(request):
     return _check_body(request, "emotion", emotion.check)
 
 
+# ---------- worksheet ----------
+
+MAX_IMAGE_BYTES = 10 * 1024 * 1024
+MAX_KEY_CHARS = 1_000
+
+
+def worksheet_page(request):
+    return render(request, "judge/worksheet.html", {"finetuned": analyzer.finetuned_available()})
+
+
+def _worksheet_checkpoints():
+    return ["multilingual"] + ([analyzer.FINETUNED] if analyzer.finetuned_available() else [])
+
+
+@require_POST
+@limits.rate_limited
+def worksheet_check(request):
+    """A photo of the sheet (field "image") or its text (field "text"), plus an optional answer key."""
+    image = request.FILES.get("image")
+    text = (request.POST.get("text") or "").strip()
+    key = (request.POST.get("key") or "").strip()[:MAX_KEY_CHARS]
+    checkpoint = request.POST.get("model") or "multilingual"
+    if checkpoint not in _worksheet_checkpoints():
+        return JsonResponse({"error": f"Không có mô hình {checkpoint!r}."}, status=400)
+    if image is None and not text:
+        return JsonResponse({"error": "Vui lòng chọn ảnh bài kiểm tra hoặc dán nội dung đề."}, status=400)
+    if image is not None and image.size > MAX_IMAGE_BYTES:
+        return JsonResponse({"error": f"Ảnh quá lớn (tối đa {MAX_IMAGE_BYTES // (1024 * 1024)} MB)."}, status=400)
+    if len(text) > MAX_BODY_CHARS:
+        return JsonResponse({"error": f"Nội dung quá dài (tối đa {MAX_BODY_CHARS} ký tự)."}, status=400)
+
+    data = image.read() if image is not None else None
+
+    def check():
+        if data is None:
+            return worksheet.solve(text.splitlines(), key, checkpoint)
+        start = time.perf_counter()
+        try:
+            lines = worksheet.read_image(data)
+        except Exception:
+            raise BadRequest("Không đọc được ảnh. Hãy thử ảnh PNG hoặc JPG rõ nét hơn.")
+        result = worksheet.solve(lines, key, checkpoint)
+        result["ocr_ms"] = (time.perf_counter() - start) * 1000 - result["latency_ms"]
+        return result
+
+    payload = hashlib.sha256(data).hexdigest() if data is not None else text
+    try:
+        result = limits.run_model(limits.cache_key("worksheet", [payload, key, checkpoint]), check)
+    except limits.Busy:
+        return limits.busy_response()
+    except BadRequest as exc:
+        return JsonResponse({"error": str(exc)}, status=400)
+    return JsonResponse(result, json_dumps_params={"ensure_ascii": False})
+
+
 @require_GET
 def status(request):
     # Pages keep their inputs disabled until a model is loaded, so make sure loading has begun even
@@ -181,12 +239,26 @@ FEED_LIMIT = 100
 MODERATE = "judge.moderate_live"
 
 
-def _can_moderate(request):
+def _is_moderator(request):
+    """A real, logged-in moderator: their own chat messages are posted as the host, unchecked."""
     return request.user.has_perm(MODERATE)
 
 
+def _can_moderate(request):
+    """Who may see hidden comments and work the queue. In demo mode that is every visitor."""
+    return settings.LIVE_DEMO or _is_moderator(request)
+
+
 def _can_reset(request):
-    return settings.LIVE_DEMO or _can_moderate(request)
+    return _can_moderate(request)
+
+
+def _actor(request):
+    """The user a queue action is recorded under; demo visitors without a login share one."""
+    if request.user.is_authenticated:
+        return request.user
+    user, _ = get_user_model().objects.get_or_create(username="demo")
+    return user
 
 
 def _comment_json(c, moderator):
@@ -244,7 +316,7 @@ def live_post(request):
     if len(text) > MAX_COMMENT_CHARS:
         return JsonResponse({"error": f"Tin nhắn quá dài (tối đa {MAX_COMMENT_CHARS} ký tự)."}, status=400)
     moderator = _can_moderate(request)
-    if moderator and not as_viewer:
+    if _is_moderator(request) and not as_viewer:
         result = {"kind": "host", "match": None, "source": "host", "laya_negative": 0.0}
     else:
         try:
@@ -289,11 +361,12 @@ def live_feed(request):
     )
 
 
-@login_required
 def live_queue_page(request):
     if not _can_moderate(request):
+        if not request.user.is_authenticated:
+            return redirect_to_login(request.get_full_path())
         return render(request, "judge/live_forbidden.html", status=403)
-    return render(request, "judge/live_queue.html", {"kinds": live.QUEUE_KINDS})
+    return render(request, "judge/live_queue.html", {"kinds": live.QUEUE_KINDS, "me": _actor(request).get_username()})
 
 
 @require_GET
@@ -315,7 +388,7 @@ def live_queue(request):
         "hidden": LiveComment.objects.filter(kind__in=live.BLOCKED_KINDS, restored=False).count(),
     }
     return JsonResponse(
-        {"comments": [_comment_json(c, True) for c in comments], "counts": counts, "me": request.user.get_username()},
+        {"comments": [_comment_json(c, True) for c in comments], "counts": counts, "me": _actor(request).get_username()},
         json_dumps_params={"ensure_ascii": False},
     )
 
@@ -330,12 +403,12 @@ def live_queue_action(request, comment_id):
         return JsonResponse({"error": str(exc)}, status=400)
     comment = get_object_or_404(LiveComment, id=comment_id)
     if action == "claim":
-        comment.assigned_to = request.user
+        comment.assigned_to = _actor(request)
     elif action == "unclaim":
         comment.assigned_to = None
     elif action == "done":
         comment.status, comment.handled_at = "done", timezone.now()
-        comment.assigned_to = comment.assigned_to or request.user
+        comment.assigned_to = comment.assigned_to or _actor(request)
     elif action == "reopen":
         comment.status, comment.handled_at = "new", None
     elif action == "restore":

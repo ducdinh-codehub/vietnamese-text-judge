@@ -23,10 +23,44 @@ QUESTIONS = CONFIG["questions"]
 CHECKPOINTS = ("multilingual", "english", "auto")
 DEFAULT_THRESHOLD = 0.7
 
+# LAYA_ONNX=onnx/laya-multilingual-int8.onnx serves the multilingual checkpoint from an ONNX file
+# made by export_onnx.py instead of PyTorch. Relative paths are from the project root.
+ONNX_PATH = os.environ.get("LAYA_ONNX")
+if ONNX_PATH:
+    ONNX_PATH = str(Path(__file__).resolve().parent.parent / ONNX_PATH)
+
+# Checkpoint fine-tuned on Vietnamese school tests by finetune/train.py. The Router only knows the Hub
+# checkpoints, so this one is loaded as its own Agent on first use. LAYA_VI_SCHOOL moves it.
+FINETUNED = "vi-school"
+FINETUNED_DIR = Path(os.environ.get("LAYA_VI_SCHOOL")
+                     or Path(__file__).resolve().parent.parent / "checkpoints" / "laya-vi-school")
+_finetuned_agent = None
+
 _router = Router()
 _load_lock = threading.Lock()
-# name -> {"load_ms": float, "warnings": [str]}
+
+
+def finetuned_available():
+    return (FINETUNED_DIR / "model.safetensors").exists()
+# name -> {"load_ms": float, "warnings": [str], "backend": str}
 _loaded = {}
+
+
+def _load(name):
+    """Build the agent for `name` and hand it to the router; returns the backend's name."""
+    if name == FINETUNED:
+        from laya.agent import Agent
+
+        global _finetuned_agent
+        _finetuned_agent = Agent(str(FINETUNED_DIR))
+        return "pytorch: " + FINETUNED_DIR.name
+    if ONNX_PATH and name == "multilingual":
+        from laya.onnx_agent import ONNXAgent
+
+        _router.attach(name, ONNXAgent("convaiinnovations/laya", onnx_path=ONNX_PATH, subfolder="multilingual"))
+        return "onnx: " + Path(ONNX_PATH).name
+    _router.preload([name])
+    return "pytorch"
 
 
 def _ensure_loaded(name):
@@ -39,11 +73,12 @@ def _ensure_loaded(name):
         start = time.perf_counter()
         with warnings.catch_warnings(record=True) as caught:
             warnings.simplefilter("always")
-            _router.preload([name])
+            backend = _load(name)
         load_ms = (time.perf_counter() - start) * 1000
         _loaded[name] = {
             "load_ms": load_ms,
             "warnings": [str(w.message) for w in caught],
+            "backend": backend,
         }
         return load_ms
 
@@ -112,6 +147,13 @@ def _language(state, text):
 
 def predict(state, laya_questions, checkpoint="multilingual"):
     """Ask Laya a set of questions, loading the checkpoint first if needed."""
+    if checkpoint == FINETUNED:
+        load_ms = _ensure_loaded(FINETUNED)
+        start = time.perf_counter()
+        result = _finetuned_agent.system_one(state, laya_questions)
+        predict_ms = (time.perf_counter() - start) * 1000
+        return {"result": result, "decision": None, "model": FINETUNED, "load_ms": load_ms,
+                "predict_ms": predict_ms}
     if checkpoint not in CHECKPOINTS:
         raise ValueError(f"checkpoint must be one of {CHECKPOINTS}")
     decision = _router.route(state, laya_questions, model=None if checkpoint == "auto" else checkpoint)

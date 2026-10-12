@@ -18,11 +18,18 @@
       <nav class="nav">
         <a href="{% url 'live' %}">← Về phiên live</a>
       </nav>
-      <form class="top-live" method="post" action="{% url 'logout' %}">
-        {% csrf_token %}
-        <span class="muted small">👤 {{ user.get_username }}</span>
-        <button type="submit" class="btn">Đăng xuất</button>
-      </form>
+      {% if user.is_authenticated %}
+        <form class="top-live" method="post" action="{% url 'logout' %}">
+          {% csrf_token %}
+          <span class="muted small">👤 {{ me }}</span>
+          <button type="submit" class="btn">Đăng xuất</button>
+        </form>
+      {% else %}
+        <div class="top-live">
+          <span class="pill pill-muted">Chế độ demo · 👤 {{ me }}</span>
+          <a class="btn" href="{% url 'login' %}?next={% url 'live_queue' %}">Đăng nhập</a>
+        </div>
+      {% endif %}
     </div>
   </header>
 

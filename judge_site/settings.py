@@ -55,8 +55,9 @@ DATABASES = {
     }
 }
 
-# Demo mode: anyone may clear the livestream chat with "Làm lại từ đầu", no login needed.
-# Set LAYA_LIVE_DEMO=0 before putting the site online, or any visitor can wipe it.
+# Demo mode: every visitor gets the moderator features without logging in: the queue, hidden
+# comments and why they were hidden, and "Làm lại từ đầu". Their own messages are still checked.
+# Set LAYA_LIVE_DEMO=0 before putting the site online, or any visitor can read and wipe the chat.
 LIVE_DEMO = os.environ.get("LAYA_LIVE_DEMO", "1") == "1"
 
 LOGIN_URL = "login"

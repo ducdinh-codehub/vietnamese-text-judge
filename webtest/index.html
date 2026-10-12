@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Laya Browser Test</title>
+<style>
+  :root { --bg: #fafaf9; --fg: #1c1917; --muted: #78716c; --line: #e7e5e4; --card: #fff;
+          --ok: #15803d; --bad: #b91c1c; --accent: #2563eb; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0c0a09; --fg: #f5f5f4; --muted: #a8a29e; --line: #292524; --card: #1c1917;
+            --ok: #4ade80; --bad: #f87171; --accent: #60a5fa; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 16px; background: var(--bg); color: var(--fg);
+         font: 15px/1.5 -apple-system, system-ui, sans-serif; max-width: 720px; margin-inline: auto; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  p { margin: 0 0 12px; color: var(--muted); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px; margin-bottom: 12px; }
+  .controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  select, button { font: inherit; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--line);
+                   background: var(--card); color: var(--fg); }
+  button { background: var(--accent); color: #fff; border: 0; font-weight: 600; }
+  button:disabled { opacity: .5; }
+  progress { width: 100%; height: 8px; margin-top: 10px; }
+  dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0; }
+  dt { color: var(--muted); }
+  dd { margin: 0; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  .case { border-top: 1px solid var(--line); padding: 8px 0; }
+  .case:first-child { border-top: 0; }
+  .msg { font-size: 13px; color: var(--muted); }
+  .ok { color: var(--ok); } .bad { color: var(--bad); }
+  #log { font: 12px/1.4 ui-monospace, monospace; white-space: pre-wrap; color: var(--muted); }
+</style>
+</head>
+<body>
+<h1>Laya in the browser</h1>
+<p>Downloads the 349 MB int8 model, runs it with onnxruntime-web and checks the answers match the
+Python run. If the page goes blank or reloads mid-test, the browser killed it for using too much memory.</p>
+
+<div class="card">
+  <div class="controls">
+    <select id="ep"><option value="wasm">CPU (WebAssembly)</option><option value="webgpu">GPU (WebGPU)</option></select>
+    <button id="run" disabled>Loading onnxruntime-web…</button>
+  </div>
+  <progress id="progress" value="0" max="1" hidden></progress>
+  <div id="log"></div>
+</div>
+
+<div class="card"><dl id="summary"></dl></div>
+<div class="card" id="cases" hidden></div>
+
+<script type="module">
+import * as ort from "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.30.0/dist/ort.webgpu.min.mjs";
+
+const $ = (id) => document.getElementById(id);
+const log = (line) => { $("log").textContent += line + "\n"; };
+const summary = {};
+const setStat = (key, value) => {
+  summary[key] = value;
+  $("summary").innerHTML = Object.entries(summary).map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("");
+};
+
+if (!navigator.gpu) $("ep").querySelector('[value="webgpu"]').disabled = true;
+$("run").textContent = "Download & run (349 MB)";
+$("run").disabled = false;
+setStat("Device", navigator.userAgent);
+setStat("Device RAM", navigator.deviceMemory ? `≥ ${navigator.deviceMemory} GB (browser-reported)` : "not reported");
+setStat("WebGPU", navigator.gpu ? "available" : "not available");
+setStat("Threads", crossOriginIsolated ? `${navigator.hardwareConcurrency} (multi-threaded)` : "1 (page is not cross-origin isolated)");
+
+async function download(url) {
+  const res = await fetch(url);
+  const total = Number(res.headers.get("Content-Length"));
+  const bytes = new Uint8Array(total);
+  const reader = res.body.getReader();
+  const bar = $("progress");
+  bar.hidden = false;
+  let received = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    bytes.set(value, received);
+    received += value.length;
+    bar.value = received / total;
+  }
+  return bytes;
+}
+
+function toTensor(name, { dims, data }) {
+  if (name === "marker_mask") return new ort.Tensor("bool", Uint8Array.from(data, Number), dims);
+  return new ort.Tensor("int64", BigInt64Array.from(data, BigInt), dims);
+}
+
+function softmax(row, k) {
+  const z = row.slice(0, k), max = Math.max(...z);
+  const e = z.map((v) => Math.exp(v - max)), sum = e.reduce((a, b) => a + b, 0);
+  return e.map((v) => v / sum);
+}
+
+const argmax = (a) => a.indexOf(Math.max(...a));
+const mb = (n) => (n / 1e6).toFixed(0) + " MB";
+const median = (a) => [...a].sort((x, y) => x - y)[Math.floor(a.length / 2)];
+
+$("run").onclick = async () => {
+  $("run").disabled = $("ep").disabled = true;
+  const ep = $("ep").value;
+  try {
+    const cases = await (await fetch("web-cases.json")).json();
+
+    log("Downloading model...");
+    let t = performance.now();
+    let model = await download("model.onnx");
+    const downloadS = (performance.now() - t) / 1000;
+    setStat("Download", `${mb(model.length)} in ${downloadS.toFixed(1)} s (${(model.length / 1e6 / downloadS).toFixed(1)} MB/s)`);
+
+    log(`Loading into onnxruntime-web (${ep})...`);
+    t = performance.now();
+    const session = await ort.InferenceSession.create(model, { executionProviders: [ep], graphOptimizationLevel: "all" });
+    model = null;
+    setStat("Load", `${((performance.now() - t) / 1000).toFixed(1)} s on ${ep}`);
+
+    log(`Running ${cases.length} cases...`);
+    const times = [], rows = [];
+    let answers = 0, same = 0, maxDiff = 0;
+    for (const c of cases) {
+      const feeds = Object.fromEntries(Object.entries(c.inputs).map(([k, v]) => [k, toTensor(k, v)]));
+      t = performance.now();
+      const out = await session.run(feeds);
+      times.push(performance.now() - t);
+
+      const [nRows, nMarkers] = out.logits.dims;
+      const parts = [];
+      let caseOk = true;
+      c.questions.forEach((q, r) => {
+        const k = q.options.length;
+        const got = softmax(Array.from(out.logits.data.slice(r * nMarkers, r * nMarkers + nMarkers)), k);
+        const want = softmax(c.expected.logits[r], k);
+        maxDiff = Math.max(maxDiff, ...got.map((p, i) => Math.abs(p - want[i])));
+        const match = argmax(got) === argmax(want);
+        answers++; same += match; caseOk &&= match;
+        parts.push(`${q.id}: <b>${q.options[argmax(got)]}</b>${match ? "" : ` <span class="bad">(Python: ${q.options[argmax(want)]})</span>`}`);
+      });
+      rows.push(`<div class="case"><div><span class="${caseOk ? "ok" : "bad"}">${caseOk ? "✓" : "✗"}</span> `
+        + `[${c.set}] ${times.at(-1).toFixed(0)} ms</div><div class="msg">${c.message}</div><div>${parts.join(" · ")}</div></div>`);
+    }
+
+    setStat("First run", `${times[0].toFixed(0)} ms (includes warm-up)`);
+    setStat("Typical run", `${median(times.slice(1)).toFixed(0)} ms per message (median)`);
+    setStat("Answers match Python", `<span class="${same === answers ? "ok" : "bad"}">${same}/${answers}</span>, max probability difference ${maxDiff.toFixed(4)}`);
+    if (performance.memory) setStat("JS heap", mb(performance.memory.usedJSHeapSize));
+    $("cases").innerHTML = rows.join("");
+    $("cases").hidden = false;
+    log("Done.");
+  } catch (err) {
+    log("Failed: " + (err?.message || err));
+    setStat("Error", `<span class="bad">${err?.message || err}</span>`);
+  }
+};
+</script>
+</body>
+</html>

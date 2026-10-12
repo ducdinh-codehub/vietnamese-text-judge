@@ -1,0 +1,27 @@
+/* Worksheet solver page. Buttons match live.css. */
+
+.btn {
+  font: inherit; font-size: 14px; font-weight: 600;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: 36px; padding: 6px 14px;
+  border-radius: 8px; border: 1px solid var(--border);
+  background: var(--panel); color: var(--text);
+  cursor: pointer; white-space: nowrap;
+}
+.btn:disabled { opacity: .5; cursor: default; }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+.btn-primary:hover:not(:disabled) { filter: brightness(1.08); }
+.btn-block { width: 100%; margin-bottom: 8px; }
+
+input[type="file"] { font: inherit; font-size: 13.5px; font-weight: 400; max-width: 100%; }
+.sheet-preview { max-width: 100%; max-height: 260px; object-fit: contain; border: 1px solid var(--border); border-radius: 8px; }
+
+.sheet-cards { margin-top: 12px; }
+.card.is-correct { border-left: 5px solid var(--good); }
+.card.is-wrong { border-left: 5px solid var(--bad); }
+.card.is-problem { border-left: 5px solid var(--warn); }
+.stem { margin: 6px 0 10px; font-size: 14.5px; overflow-wrap: anywhere; }
+
+.ocr-text { margin-top: 12px; }
+.ocr-text summary { cursor: pointer; font-weight: 600; font-size: 14px; }
+.ocr-text pre { white-space: pre-wrap; overflow-wrap: anywhere; margin: 10px 0 0; font-size: 13px; }

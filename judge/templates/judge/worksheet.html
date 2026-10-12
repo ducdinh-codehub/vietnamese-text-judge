@@ -1,0 +1,89 @@
+{% load static %}<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1b2029" media="(prefers-color-scheme: dark)">
+  <title>Giải bài trắc nghiệm</title>
+  <link rel="stylesheet" href="{% static 'judge/app.css' %}">
+  <link rel="stylesheet" href="{% static 'judge/worksheet.css' %}">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <h1>Giải bài trắc nghiệm</h1>
+        <span id="model-status" class="pill pill-muted">Checking model…</span>
+      </div>
+      <nav class="nav">
+        <a href="{% url 'index' %}">Text Judge</a>
+        <a href="{% url 'scam' %}">Kiểm tra lừa đảo</a>
+        <a href="{% url 'emotion' %}">Cảm xúc</a>
+        <a href="{% url 'live' %}">Livestream</a>
+        <a href="{% url 'worksheet' %}" aria-current="page">Giải bài trắc nghiệm</a>
+      </nav>
+    </div>
+    <div id="busy" class="busy" aria-hidden="true"></div>
+  </header>
+
+  <main class="layout">
+    <form id="sheet-form" class="panel input-panel is-loading" aria-busy="true">
+      {% csrf_token %}
+      <label class="field">
+        <span>Ảnh bài kiểm tra</span>
+        <input id="image" type="file" accept="image/png,image/jpeg,image/webp">
+        <img id="preview" class="sheet-preview" alt="Ảnh bài kiểm tra đã chọn" hidden>
+      </label>
+      <label class="field">
+        <span>Hoặc dán nội dung đề <em class="muted">(dùng khi không có ảnh)</em></span>
+        <textarea id="text" rows="6" maxlength="3000"
+          placeholder="Câu 1. Thủ đô của Việt Nam là gì?&#10;A. Huế  B. Hà Nội  C. Đà Nẵng  D. Cần Thơ"></textarea>
+      </label>
+      <label class="field">
+        <span>Đáp án đúng <em class="muted">(không bắt buộc, để chấm điểm Laya)</em></span>
+        <input id="key" type="text" maxlength="1000" placeholder="1B 2A 3D… hoặc BADC…">
+      </label>
+      <label class="field">
+        <span>Mô hình</span>
+        <select id="model">
+          {% if finetuned %}<option value="vi-school" selected>Laya fine-tune trên đề thi Việt Nam</option>{% endif %}
+          <option value="multilingual">Laya gốc (multilingual)</option>
+        </select>
+      </label>
+      <button id="solve" type="submit" class="btn btn-primary btn-block">Giải bài</button>
+      <p class="muted small">
+        Laya là mô hình đánh giá văn bản, không phải mô hình kiến thức: nó chưa từng học toán hay
+        địa lý, nên đáp án có thể sai nhiều. Nhập đáp án đúng để xem Laya làm đúng bao nhiêu câu.
+      </p>
+      <p id="form-error" class="error" role="alert"></p>
+    </form>
+
+    <section class="results">
+      <div class="summary">
+        <div class="stat" id="score-stat">
+          <div class="label">Laya đúng</div>
+          <div class="value" id="score">—</div>
+          <div class="hint" id="score-hint">Nhập đáp án đúng để chấm</div>
+        </div>
+        <div class="stat">
+          <div class="label">Câu đọc được</div>
+          <div class="value" id="found">—</div>
+          <div class="hint" id="timing">&nbsp;</div>
+        </div>
+      </div>
+
+      <div id="questions" class="cards sheet-cards">
+        <p class="muted">Chọn ảnh hoặc dán đề rồi bấm “Giải bài”.</p>
+      </div>
+
+      <details class="panel ocr-text">
+        <summary>Chữ đọc được từ ảnh (OCR)</summary>
+        <pre id="ocr-lines" class="muted small">—</pre>
+      </details>
+    </section>
+  </main>
+
+  <script src="{% static 'judge/worksheet.js' %}"></script>
+</body>
+</html>
